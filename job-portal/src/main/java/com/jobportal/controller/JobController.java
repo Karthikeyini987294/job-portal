@@ -2,10 +2,10 @@ package com.jobportal.controller;
 
 
 	import java.util.List;
+
 	import org.springframework.web.bind.annotation.RequestParam;
 	
 	import com.jobportal.entity.Job;
-	import java.util.Optional;
 	import org.springframework.web.bind.annotation.PathVariable;
 
 	import org.springframework.web.bind.annotation.GetMapping;
@@ -16,6 +16,10 @@ package com.jobportal.controller;
 	import com.jobportal.service.JobService;
 	import org.springframework.web.bind.annotation.PutMapping;
 	import org.springframework.web.bind.annotation.DeleteMapping;
+	import org.springframework.data.domain.Page;
+	import org.springframework.data.domain.Pageable;
+	import org.springframework.data.web.PageableDefault;
+	import jakarta.validation.Valid;
 
 
 	@RestController
@@ -29,8 +33,12 @@ package com.jobportal.controller;
 	        this.jobService = jobService;
 	    }
 
+//	    @PostMapping
+//	    public Job createJob(@RequestBody Job job) {
+//	        return jobService.createJob(job);
+//	    }
 	    @PostMapping
-	    public Job createJob(@RequestBody Job job) {
+	    public Job createJob(@Valid @RequestBody Job job) {
 	        return jobService.createJob(job);
 	    }
 
@@ -39,7 +47,7 @@ package com.jobportal.controller;
 	        return jobService.getAllJobs();
 	    }
 	    @GetMapping("/{id}")
-	    public Optional<Job> getJobById(@PathVariable Long id) {
+	    public Job getJobById(@PathVariable Long id) {
 	        return jobService.getJobById(id);
 	    }
 	    @PutMapping("/{id}")
@@ -64,5 +72,22 @@ package com.jobportal.controller;
 	            @RequestParam String employmentType) {
 	        return jobService.filterJobsByEmploymentType(employmentType);
 	    }
+	    @GetMapping("/page")
+	    public Page<Job> getJobsWithPagination(
+	            @PageableDefault(size = 5) Pageable pageable) {
+	        return jobService.getJobsWithPagination(pageable);
+	    }
+//	    @GetMapping("/sort")
+//	    public List<Job> getJobsSortedBySalary() {
+//	        return jobService.getJobsSortedBySalary();
+//	    }
+	    @GetMapping("/sort")
+	    public List<Job> getJobsSorted(
+	            @RequestParam(defaultValue = "salary") String field,
+	            @RequestParam(defaultValue = "desc") String direction) {
+
+	        return jobService.getJobsSorted(field, direction);
+	    }
+	   
 	}
 
