@@ -1,6 +1,7 @@
 package com.jobportal.exception;
 
 import java.util.HashMap;
+import org.springframework.security.core.AuthenticationException;
 import java.util.Map;
 
 import org.springframework.http.HttpStatus;
@@ -41,6 +42,15 @@ public class GlobalExceptionHandler {
         return new ResponseEntity<>(
                 ex.getMessage(),
                 HttpStatus.BAD_REQUEST
+        );
+    }
+    @ExceptionHandler(AuthenticationException.class)
+    public ResponseEntity<String> handleAuthenticationException(
+            AuthenticationException ex) {
+
+        return new ResponseEntity<>(
+                "Invalid email or password",
+                HttpStatus.UNAUTHORIZED
         );
     }
 }

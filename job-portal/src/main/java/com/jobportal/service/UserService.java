@@ -2,6 +2,8 @@
 package com.jobportal.service;
 
 import java.util.Optional;
+import org.springframework.security.authentication.AuthenticationManager;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -15,76 +17,53 @@ import com.jobportal.repository.UserRepository;
 @Service
 public class UserService {
 
-    private final UserRepository userRepository;
-    private final PasswordEncoder passwordEncoder;
+	private final UserRepository userRepository;
+	private final PasswordEncoder passwordEncoder;
+	private final AuthenticationManager authenticationManager;
 
-    public UserService(UserRepository userRepository,
-                       PasswordEncoder passwordEncoder) {
-        this.userRepository = userRepository;
-        this.passwordEncoder = passwordEncoder;
-    }
-    public UserResponse registerUser(RegisterRequest request) {
+	public UserService(UserRepository userRepository, PasswordEncoder passwordEncoder, AuthenticationManager authenticationManager) {
+		this.userRepository = userRepository;
+		this.passwordEncoder = passwordEncoder;
+		this.authenticationManager = authenticationManager;
+	}
 
-        // Check duplicate email
-        Optional<User> existingUser =
-                userRepository.findByEmail(request.getEmail());
+	public UserResponse registerUser(RegisterRequest request) {
 
-        if (existingUser.isPresent()) {
-            throw new IllegalArgumentException("Email already registered");
-        }
+		// Check duplicate email
+		Optional<User> existingUser = userRepository.findByEmail(request.getEmail());
 
-        // Create new user
-        User user = new User();
+		if (existingUser.isPresent()) {
+			throw new IllegalArgumentException("Email already registered");
+		}
+		User user = new User();
 
-        user.setName(request.getName());
-        user.setEmail(request.getEmail());
+		user.setName(request.getName());
+		user.setEmail(request.getEmail());
+		user.setPassword(passwordEncoder.encode(request.getPassword()));
+		user.setRole("CANDIDATE");
+		User savedUser = userRepository.save(user);
+		return new UserResponse(savedUser.getId(), savedUser.getName(), savedUser.getEmail(), savedUser.getRole());
+	}
 
-        // Encrypt password using BCrypt
-        user.setPassword(passwordEncoder.encode(request.getPassword()));
+	public UserResponse loginUser(LoginRequest request) {
 
-        // Assign default role
-        user.setRole("CANDIDATE");
+	    authenticationManager.authenticate(
+	        new UsernamePasswordAuthenticationToken(
+	            request.getEmail(),
+	            request.getPassword()
+	        )
+	    );
 
-        // Save user
-        User savedUser = userRepository.save(user);
+	    User user = userRepository.findByEmail(request.getEmail())
+	            .orElseThrow(() ->
+	                new IllegalArgumentException("Invalid email or password"));
 
-        // Return safe response without password
-        return new UserResponse(
-                savedUser.getId(),
-                savedUser.getName(),
-                savedUser.getEmail(),
-                savedUser.getRole()
-        );
-    }
-
-public UserResponse loginUser(LoginRequest request) {
-
-    // Find user by email
-    User user = userRepository.findByEmail(request.getEmail())
-            .orElseThrow(() ->
-                    new IllegalArgumentException("Invalid email or password"));
-
-    // Verify password using BCrypt
-    boolean passwordMatches = passwordEncoder.matches(
-            request.getPassword(),
-            user.getPassword()
-    );
-
-    if (!passwordMatches) {
-        throw new IllegalArgumentException("Invalid email or password");
-    }
-
-    // Return safe user response
-    return new UserResponse(
-            user.getId(),
-            user.getName(),
-            user.getEmail(),
-            user.getRole()
-    );
+	    return new UserResponse(
+	            user.getId(),
+	            user.getName(),
+	            user.getEmail(),
+	            user.getRole()
+	    );
 }
-
-    
-   
 }
-
 
